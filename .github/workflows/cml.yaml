@@ -15,6 +15,6 @@ jobs:
           TB_CREDENTIALS: ${{ secrets.TB_CREDENTIALS }}
         run: |
           pip install -r requirements.txt
-          cml-tensorboard-dev --logdir reports/tensorboard/logs/ --md --name "MNIST training monitored on tensorboard" >> report.md
+          cml-tensorboard-dev --logdir reports/tensorboard/logs --md --name "MNIST training monitored on tensorboard" >> report.md
           cml-send-comment report.md
           python src/models/train_model.py
