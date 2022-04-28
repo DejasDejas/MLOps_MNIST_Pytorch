@@ -40,7 +40,7 @@ lint:
 
 ## Logging with Tensorboard
 tensorboard:
-	tensorboard --logdir reports/outputs/tensorboard_logs/
+	tensorboard --logdir reports/tensorboard/logs/
 
 ## run model training
 train: requirements

@@ -11,6 +11,7 @@ from ignite.metrics import Accuracy, Loss
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
 from ignite.utils import manual_seed
 import numpy as np
+import datetime
 
 try:
     from tensorboardX import SummaryWriter
@@ -58,7 +59,7 @@ def main(args):
     epochs = args.epochs
     lr = args.lr
     log_interval = args.log_interval
-    log_dir = args.log_dir
+    log_dir = args.log_dir + datetime.datetime.now().strftime("%Y_%m_%d--%Hh%Mmn%S")
     model_dir = args.model_dir
     checkpoint_every = args.checkpoint_every
     resume_from = args.resume_from
@@ -301,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_dir",
         type=str,
-        default="reports/outputs/tensorboard_logs/",
+        default="reports/tensorboard/logs/",
         help="tensorboard_logs directory for " "Tensorboard tensorboard_logs output ",
     )
     parser.add_argument(

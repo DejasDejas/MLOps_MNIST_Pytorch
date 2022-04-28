@@ -108,7 +108,7 @@ def images_to_probs(net, images):
     return preds, [F.softmax(el, dim=0)[i].item() for i, el in zip(preds, output)]
 
 
-def plot_classes_preds(net, images, labels, classes):
+def plot_classes_preds(net, images, labels, classes, n_img=16):
     """
     Generates matplotlib Figure using a trained network, along with images
     and labels from a batch, that shows the network's top prediction along
@@ -118,9 +118,11 @@ def plot_classes_preds(net, images, labels, classes):
     """
     preds, probs = images_to_probs(net, images)
     # plot the images in the batch, along with predicted and true labels
-    fig = plt.figure(figsize=(12, 48))
-    for idx in np.arange(4):
-        ax = fig.add_subplot(1, 4, idx + 1, xticks=[], yticks=[])
+    n_cols = 4
+    n_rows = int(np.ceil(n_img / n_cols))
+    fig = plt.figure(figsize=(15, 15))
+    for idx in np.arange(n_img):
+        ax = fig.add_subplot(n_rows, n_cols, idx + 1, xticks=[], yticks=[])
         matplotlib_imshow(images[idx], one_channel=True)
         ax.set_title("{0}, {1:.1f}%\n(label: {2})".format(
             classes[preds[idx]],

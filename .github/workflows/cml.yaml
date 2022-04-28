@@ -1,2 +1,20 @@
-  on:
-  jobs:
+name: train-my-model
+on: [push]
+jobs:
+  run:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: iterative/setup-cml@v1
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: cml
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          TB_CREDENTIALS: ${{ secrets.TB_CREDENTIALS }}
+        run: |
+          pip install -r requirements.txt
+          cml-tensorboard-dev --logdir reports/tensorboard/logs/ --md --name "MNIST training monitored on tensorboard" >> report.md
+          cml-send-comment report.md
+          python src/models/train_model.py
