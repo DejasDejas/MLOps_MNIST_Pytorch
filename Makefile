@@ -27,7 +27,7 @@ requirements: test_environment
 
 ## Make Dataset
 data: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
+	$(PYTHON_INTERPRETER) src/data/data_loader.py
 
 ## Delete all compiled Python files
 clean:
@@ -37,6 +37,14 @@ clean:
 ## Lint using flake8
 lint:
 	flake8 src
+
+## Logging with Tensorboard
+tensorboard:
+	tensorboard --logdir reports/outputs/tensorboard_logs/
+
+## run model training
+train: requirements
+	$(PYTHON_INTERPRETER) src/models/train_model.py
 
 ## Upload Data to S3
 sync_data_to_s3:
