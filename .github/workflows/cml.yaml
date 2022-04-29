@@ -15,4 +15,5 @@ jobs:
           TB_CREDENTIALS: ${{ secrets.TB_CREDENTIALS }}
         run: |
           pip3 install -r requirements.txt      
+          python3 src/data/data_loader.py
           python3 src/models/train_model.py
