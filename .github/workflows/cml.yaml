@@ -15,9 +15,12 @@ jobs:
           TB_CREDENTIALS: ${{ secrets.TB_CREDENTIALS }}
         run: |
           pip install -r requirements.txt
-          pip install -U tensorboard 
-          tensorboard dev upload --logdir reports/tensorboard/logs/ \
-          --name "tensorboard dev test MNIST" \
-          --description "Training results of MNIST classification with CNN"
+          
+          cml tensorboard-dev --logdir=reports/tensorboard/logs \
+          --name="tensorboard dev test MNIST" \
+          --description="Training results of MNIST classification with CNN"
+          --title="Training" \
+          --md >> report.md
+          
           cml-send-comment report.md            
           python src/models/train_model.py
