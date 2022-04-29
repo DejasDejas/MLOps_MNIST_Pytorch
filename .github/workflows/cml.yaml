@@ -16,9 +16,8 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -U tensorboard 
-          cml-tensorboard-dev \
-            --logdir reports/tensorboard/logs \
-            --name "MNIST training monitored on tensorboard" \
-            --md >> report.md
+          tensorboard dev upload --logdir reports/tensorboard/logs/ \
+          --name "tensorboard dev test MNIST" \
+          --description "Training results of MNIST classification with CNN"
           cml-send-comment report.md            
           python src/models/train_model.py
