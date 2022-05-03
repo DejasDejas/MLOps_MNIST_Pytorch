@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
-from src.data.data_loader import mnist_dataloader
+from src.data.make_dataset import MyMNIST
 
 
 def sample_data_visualization(dataloader, n_samples=10, n_cols=5):
@@ -30,5 +30,5 @@ def sample_data_visualization(dataloader, n_samples=10, n_cols=5):
 
 if __name__ == '__main__':
 
-    train, test = mnist_dataloader()
-    sample_data_visualization(train, n_samples=25, n_cols=5)
+    dataset = MyMNIST()
+    sample_data_visualization(dataset.train_data, n_samples=25, n_cols=5)

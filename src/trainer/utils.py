@@ -2,7 +2,12 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import seaborn as sns
+import os
+
 import config.log as log
+from config.config import ROOT_DIR
 
 logger = log.setup_custom_logger(__name__)
 
@@ -132,6 +137,24 @@ def plot_classes_preds(net, images, labels, classes, n_img=16):
     return fig
 
 
+def plot_cm(classes, cm, save=False):
+    """
+    Generates confusion matrix matplotlib Figure using a trained network, along with images.
+    """
+    fig = plt.figure(figsize=(15, 15))
+    ax = fig.add_subplot()
+    sns.heatmap(cm, annot=True, ax=ax, fmt="d")
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(classes, rotation=90)
+    ax.yaxis.set_ticklabels(classes, rotation=0)
+    if save:
+        output_dir = os.path.join(ROOT_DIR, "reports", "figures")
+        plt.savefig(os.path.join(output_dir, 'cm.png'))
+    return fig
+
+
 def accuracy(dataloader, model, n_img):
     correct = 0
     total = 0
@@ -171,3 +194,30 @@ def accuracy_per_classes(dataloader, model, classes):
         _accuracy = 100 * float(correct_count) / total_pred[classname]
         logger.info(f'Accuracy for class: {classname:5s} is {_accuracy:.1f} %')
     return
+
+
+def print_num_params(model, display_all_modules=False):
+    total_num_params = 0
+    for n, p in model.named_parameters():
+        num_params = 1
+        for s in p.shape:
+            num_params *= s
+        if display_all_modules:
+            print(f"{n}: {num_params}")
+        total_num_params += num_params
+    print("-" * 50)
+    print(f"Total number of parameters: {total_num_params:,}")
+    return
+
+
+def str2bool(v):
+    """
+    Converts string to boolean.
+    codes from : https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+    """
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

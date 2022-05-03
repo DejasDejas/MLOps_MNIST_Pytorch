@@ -1,3 +1,4 @@
+import torch.nn.functional as F
 import torch.nn as nn
 from src.models.custom_layer import kaiming_init
 
@@ -37,7 +38,7 @@ class CNN(nn.Module):
         x = self.conv2(x)
         x = x.view(x.size(0), -1)
         output = self.out(x)
-        return output
+        return F.log_softmax(output, dim=1)
 
     def weight_init(self):
         for block in self._modules:
