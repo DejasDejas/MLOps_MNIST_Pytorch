@@ -21,11 +21,5 @@ jobs:
           TB_CREDENTIALS: ${{ secrets.TB_CREDENTIALS }}
         run: |
           pip install -r requirements.txt
-          cml-tensorboard-dev --logdir reports/tensorboard/logs --md --name "MNIST tb test" >> report.md
-          cml-send-comment report.md
+          # TODO: Add neptune monitoring
           python src/trainer/run.py
-          
-          # Create CML report
-          cat reports/metrics/metrics.json >> report.md
-          cml publish reports/figure/cm.png --md --title 'Confusion Matrix' >> report.md
-          cml send-comment report.md
