@@ -1,6 +1,6 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
 """System module."""
-import torch.nn as nn
+from torch import nn
 
 
 def kaiming_init(m):

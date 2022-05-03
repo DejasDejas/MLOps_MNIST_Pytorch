@@ -2,7 +2,7 @@
 """System module."""
 import matplotlib.pyplot as plt
 import torch
-from src.data.make_dataset import MyMNIST
+from src.data.make_dataset import load_mnist_data
 
 
 def sample_data_visualization(dataloader, n_samples=10, n_cols=5):
@@ -30,5 +30,5 @@ def sample_data_visualization(dataloader, n_samples=10, n_cols=5):
 
 
 if __name__ == '__main__':
-    dataset = MyMNIST()
-    sample_data_visualization(dataset.train_data, n_samples=25, n_cols=5)
+    train_loader, valid_loader, test_loader = load_mnist_data()
+    sample_data_visualization(train_loader.dataset, n_samples=25, n_cols=5)

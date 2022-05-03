@@ -1,4 +1,4 @@
-# pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module, no-member]
 """System module."""
 from unittest import TestCase
 import torch

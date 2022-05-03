@@ -1,11 +1,9 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module, unused-variable]
 """System module."""
 from pathlib import Path
-import json
 import datetime
 import os
 import traceback
-
 try:
     from tensorboardX import SummaryWriter
 except ImportError:
@@ -29,22 +27,19 @@ from ignite.metrics import Accuracy, Loss, ConfusionMatrix
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
 from ignite.utils import manual_seed
 import numpy as np
-
 from tqdm import tqdm
-
 from src.trainer.utils import (
     log_model_weights,
     log_data_stats,
     log_model_grads,
     plot_classes_preds,
     gpu_config,
-    print_num_params,
-    plot_cm
+    print_num_params
 )
-import config.log as log
+from config.log import setup_custom_logger
 from config.config import ROOT_DIR
 
-logger = log.setup_custom_logger(__name__)
+logger = setup_custom_logger(__name__)
 
 SEED = 42
 

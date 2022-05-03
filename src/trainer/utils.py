@@ -1,19 +1,16 @@
 # pylint: disable=invalid-name, disable=import-error, no-name-in-module, unused-argument
-# pylint: disable=logging-fstring-interpolation
+# pylint: disable=logging-fstring-interpolation, no-member
 """System module."""
 import argparse
-import os
 
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 
-import config.log as log
-from config.config import ROOT_DIR
+from config.log import setup_custom_logger
 
-logger = log.setup_custom_logger(__name__)
+logger = setup_custom_logger(__name__)
 
 
 def gpu_config(model):

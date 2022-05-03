@@ -5,13 +5,13 @@
 import os
 
 import torch
-import torch.utils.data as data
+from torch.utils import data
 from torchvision import transforms, datasets
 
-import config.log as log
+from config.log import setup_custom_logger
 from config.config import raw_path
 
-logger = log.setup_custom_logger(__name__)
+logger = setup_custom_logger(__name__)
 
 
 def load_mnist_data(batch_size_train=32, num_workers=0, split_train_data=False, split_size=0.8,

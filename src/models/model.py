@@ -1,7 +1,7 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
 """System module."""
 import torch.nn.functional as F
-import torch.nn as nn
+from torch import nn
 from src.models.custom_layer import kaiming_init
 
 
@@ -10,8 +10,7 @@ class CNN(nn.Module):
     CNN model.
     """
     def __init__(self):
-        super(CNN, self).__init__()
-
+        super().__init__()
         self.conv1 = nn.Sequential(
             nn.Conv2d(
                 in_channels=1,
