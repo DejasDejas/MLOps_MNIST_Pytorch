@@ -1,10 +1,14 @@
+# pylint: disable=invalid-name, disable=import-error, no-name-in-module, unused-argument
+# pylint: disable=logging-fstring-interpolation
+"""System module."""
+import argparse
+import os
+
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
 import seaborn as sns
-import os
 
 import config.log as log
 from config.config import ROOT_DIR
@@ -13,6 +17,9 @@ logger = log.setup_custom_logger(__name__)
 
 
 def gpu_config(model):
+    """
+    Helper function to move model to GPU
+    """
     use_gpu = torch.cuda.is_available()
     gpu_count = torch.cuda.device_count()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -31,17 +38,21 @@ def gpu_config(model):
 
 
 def print_log(_output, _engine, _fp):
+    """
+    Helper function to print log into a file
+    """
     output_items = " - ".join([f"{m}:{v:.4f}" for m, v in _output.items()])
     msg = f"{_engine.state.epoch} | {_engine.state.iteration}: {output_items}"
 
     with open(_fp, "a") as h:
         h.write(msg)
         h.write("\n")
-    return
 
 
 def log_model_weights(engine, model=None, fp=None):
-    """Helper method to tensorboard_logs norms of model weights: print and dump into a file"""
+    """
+    Helper method to tensorboard_logs norms of model weights: print and dump into a file.
+    """
     assert model and fp
     output = {"total": 0.0}
     max_counter = 5
@@ -53,11 +64,12 @@ def log_model_weights(engine, model=None, fp=None):
         output["total"] += n
         max_counter -= 1
     print_log(output, engine, fp)
-    return
 
 
 def log_model_grads(engine, model=None, fp=None):
-    """Helper method to tensorboard_logs norms of model gradients: print and dump into a file"""
+    """
+    Helper method to tensorboard_logs norms of model gradients: print and dump into a file.
+    """
     assert model and fp
     output = {"grads/total": 0.0}
     max_counter = 5
@@ -71,11 +83,13 @@ def log_model_grads(engine, model=None, fp=None):
         output["grads/total"] += n
         max_counter -= 1
     print_log(output, engine, fp)
-    return
 
 
 def log_data_stats(engine, fp=None, **kwargs):
-    """Helper method to tensorboard_logs mean/std of input batch of images and median of batch of targets."""
+    """
+    Helper method to tensorboard_logs mean/std of input batch of images and median of batch of
+    targets.
+    """
     assert fp
     x, y = engine.state.batch
     output = {
@@ -84,12 +98,12 @@ def log_data_stats(engine, fp=None, **kwargs):
         "batch ymedian": y.median().item(),
     }
     print_log(output, engine, fp)
-    return
 
 
-# helper function to show an image
-# (used in the `plot_classes_preds` function below)
 def matplotlib_imshow(img, one_channel=False):
+    """
+    Helper function to show an image
+    """
     if one_channel:
         img = img.mean(dim=0)
     img = img / 2 + 0.5  # unnormalize
@@ -98,7 +112,6 @@ def matplotlib_imshow(img, one_channel=False):
         plt.imshow(npimg, cmap="Greys")
     else:
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    return
 
 
 def images_to_probs(net, images):
@@ -132,30 +145,14 @@ def plot_classes_preds(net, images, labels, classes, n_img=16):
         ax.set_title("{0}, {1:.1f}%\n(label: {2})".format(
             classes[preds[idx]],
             probs[idx] * 100.0,
-            classes[labels[idx]]),
-            color=("green" if preds[idx] == labels[idx].item() else "red"))
-    return fig
-
-
-def plot_cm(classes, cm, save=False):
-    """
-    Generates confusion matrix matplotlib Figure using a trained network, along with images.
-    """
-    fig = plt.figure(figsize=(15, 15))
-    ax = fig.add_subplot()
-    sns.heatmap(cm, annot=True, ax=ax, fmt="d")
-    ax.set_xlabel('Predicted labels')
-    ax.set_ylabel('True labels')
-    ax.set_title('Confusion Matrix')
-    ax.xaxis.set_ticklabels(classes, rotation=90)
-    ax.yaxis.set_ticklabels(classes, rotation=0)
-    if save:
-        output_dir = os.path.join(ROOT_DIR, "reports", "figures")
-        plt.savefig(os.path.join(output_dir, 'cm.png'))
+            classes[labels[idx]]), color=("green" if preds[idx] == labels[idx].item() else "red"))
     return fig
 
 
 def accuracy(dataloader, model, n_img):
+    """
+    Generates accuracy matplotlib Figure using a trained network, along with images.
+    """
     correct = 0
     total = 0
     # since we're not training, we don't need to calculate the gradients for our outputs
@@ -169,10 +166,21 @@ def accuracy(dataloader, model, n_img):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     logger.info(f'Accuracy of the network on the {n_img} test images: {100 * correct // total} %')
-    return
+
+
+def print_accuracy_each_class(correct_predictions, total_predictions):
+    """
+    Prints accuracy of each class.
+    """
+    for classname, correct_count in correct_predictions.items():
+        _accuracy = 100 * float(correct_count) / total_predictions[classname]
+        logger.info(f'Accuracy for class: {classname:5s} is {_accuracy:.1f} %')
 
 
 def accuracy_per_classes(dataloader, model, classes):
+    """
+    Generates accuracy per class matplotlib Figure using a trained network, along with images.
+    """
     # prepare to count predictions for each class
     correct_pred = {classname: 0 for classname in classes}
     total_pred = {classname: 0 for classname in classes}
@@ -188,15 +196,13 @@ def accuracy_per_classes(dataloader, model, classes):
                 if label == prediction:
                     correct_pred[classes[label]] += 1
                 total_pred[classes[label]] += 1
-
-    # print accuracy for each class
-    for classname, correct_count in correct_pred.items():
-        _accuracy = 100 * float(correct_count) / total_pred[classname]
-        logger.info(f'Accuracy for class: {classname:5s} is {_accuracy:.1f} %')
-    return
+    print_accuracy_each_class(correct_pred, total_pred)
 
 
 def print_num_params(model, display_all_modules=False):
+    """
+    Prints the number of parameters in the model.
+    """
     total_num_params = 0
     for n, p in model.named_parameters():
         num_params = 1
@@ -207,7 +213,6 @@ def print_num_params(model, display_all_modules=False):
         total_num_params += num_params
     print("-" * 50)
     print(f"Total number of parameters: {total_num_params:,}")
-    return
 
 
 def str2bool(v):
@@ -217,7 +222,6 @@ def str2bool(v):
     """
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    if v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+    raise argparse.ArgumentTypeError('Boolean value expected.')

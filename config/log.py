@@ -1,7 +1,11 @@
+"""System module."""
 import logging
 
 
 def setup_custom_logger(name):
+    """
+    Setup a custom logger.
+    """
     formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)

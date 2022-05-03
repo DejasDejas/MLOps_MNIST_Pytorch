@@ -1,19 +1,22 @@
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
+"""System module."""
 from argparse import ArgumentParser
 from src.trainer.utils import str2bool
-from src.data.make_dataset import MyMNIST
+from src.data.make_dataset import load_mnist_data
 from src.models.model import CNN
 from src.trainer.trainer import trainer
 
 
 def run(args):
+    """
+    Run the training.
+    """
     # data:
-    dataset = MyMNIST(batch_size_train=args.batch_size)
+    train_loader, _, test_loader = load_mnist_data(batch_size_train=args.batch_size)
     # model:
     model = CNN()
     # train:
-    trainer(model, dataset, args)
-
-    return
+    trainer(model, train_loader, test_loader, args)
 
 
 if __name__ == "__main__":
@@ -31,7 +34,7 @@ if __name__ == "__main__":
         help="input batch size for validation (default: 1000)",
     )
     parser.add_argument(
-        "--epochs", type=int, default=1, help="number of epochs to train (default: 10)"
+        "--epochs", type=int, default=10, help="number of epochs to train (default: 10)"
     )
     parser.add_argument(
         "--lr", type=float, default=0.01, help="learning rate (default: 0.01)"

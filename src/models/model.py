@@ -1,9 +1,14 @@
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
+"""System module."""
 import torch.nn.functional as F
 import torch.nn as nn
 from src.models.custom_layer import kaiming_init
 
 
 class CNN(nn.Module):
+    """
+    CNN model.
+    """
     def __init__(self):
         super(CNN, self).__init__()
 
@@ -34,6 +39,9 @@ class CNN(nn.Module):
         self.weight_init()
 
     def forward(self, x):
+        """
+        Forward pass.
+        """
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(x.size(0), -1)
@@ -41,6 +49,9 @@ class CNN(nn.Module):
         return F.log_softmax(output, dim=1)
 
     def weight_init(self):
+        """
+        Weight initialization.
+        """
         for block in self._modules:
             for m in self._modules[block]:
                 kaiming_init(m)

@@ -1,20 +1,14 @@
-from abc import ABC
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
+"""System module."""
 import torch.nn as nn
 
 
-class PrintLayer(nn.Module, ABC):
-    def __init__(self):
-        super(PrintLayer, self).__init__()
-
-    def forward(self, x):
-        # Do your print / debug stuff here
-        print(x.shape)
-        return x
-
-
 def kaiming_init(m):
+    """
+    Kaiming initialization.
+    """
     if isinstance(m, (nn.Linear, nn.Conv2d)):
-        nn.init.kaiming_normal(m.weight)
+        nn.init.kaiming_normal_(m.weight)
         if m.bias is not None:
             m.bias.data.fill_(0)
     elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
@@ -24,6 +18,9 @@ def kaiming_init(m):
 
 
 def normal_init(m, mean, std):
+    """
+    Normal initialization.
+    """
     if isinstance(m, (nn.Linear, nn.Conv2d)):
         m.weight.data.normal_(mean, std)
         if m.bias.data is not None:

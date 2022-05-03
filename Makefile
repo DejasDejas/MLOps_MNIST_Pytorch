@@ -37,9 +37,10 @@ clean:
 ## execute Unit Tests
 pytest:
 	pytest
+
 ## Lint using flake8
-lint:
-	flake8 src
+pylint:
+	pylint src/
 
 ## Logging with Tensorboard
 tensorboard:

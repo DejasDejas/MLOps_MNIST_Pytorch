@@ -1,17 +1,10 @@
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module, unused-variable]
+"""System module."""
 from pathlib import Path
 import json
-
-import torch
-from torch import nn, optim
-from torch.optim.lr_scheduler import StepLR
-from ignite.engine import (Events,
-                           create_supervised_trainer,
-                           create_supervised_evaluator)
-from ignite.metrics import Accuracy, Loss, ConfusionMatrix
-from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
-from ignite.utils import manual_seed
-import numpy as np
 import datetime
+import os
+import traceback
 
 try:
     from tensorboardX import SummaryWriter
@@ -26,8 +19,17 @@ except ImportError:
             "or upgrade PyTorch using your package manager of choice "
             "(pip or conda)."
         ) from e
+import torch
+from torch import nn, optim
+from torch.optim.lr_scheduler import StepLR
+from ignite.engine import (Events,
+                           create_supervised_trainer,
+                           create_supervised_evaluator)
+from ignite.metrics import Accuracy, Loss, ConfusionMatrix
+from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
+from ignite.utils import manual_seed
+import numpy as np
 
-import os
 from tqdm import tqdm
 
 from src.trainer.utils import (
@@ -48,11 +50,17 @@ SEED = 42
 
 
 def score_function(engine):
+    """
+    Score function for the evaluator.
+    """
     val_loss = engine.state.metrics["nll"]
     return -val_loss
 
 
-def trainer(model, dataset, args):
+def trainer(model, train_loader, test_loader, args):
+    """
+    Trainer function.
+    """
     # arguments parameters:
     epochs = args.epochs
     lr = args.lr
@@ -67,8 +75,6 @@ def trainer(model, dataset, args):
 
     # data:
     class_names = np.arange(10)
-    train_loader = dataset.train_loader
-    test_loader = dataset.test_loader
 
     # training log init:
     log_dir = os.path.join(ROOT_DIR, log_dir)
@@ -110,10 +116,16 @@ def trainer(model, dataset, args):
     # Apply learning rate scheduling
     @supervised_trainer.on(Events.EPOCH_COMPLETED)
     def lr_step():
+        """
+        Learning rate scheduler.
+        """
         lr_scheduler.step()
 
     @supervised_trainer.on(Events.ITERATION_COMPLETED(every=log_interval))
     def log_training_loss(engine):
+        """
+        Log training loss.
+        """
         _lr = optimizer.param_groups[0]["lr"]
         pbar.desc = f"Epoch {engine.state.epoch} - loss: {engine.state.output:.4f} - lr: {_lr:.4f}"
         pbar.update(log_interval)
@@ -132,13 +144,17 @@ def trainer(model, dataset, args):
 
     @supervised_trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
+        """
+        Log training results.
+        """
         pbar.refresh()
         evaluator.run(train_loader)
         _metrics = evaluator.state.metrics
         avg_accuracy = _metrics["accuracy"]
         avg_nll = _metrics["nll"]
         tqdm.write(
-            f"Training Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} Avg loss: {avg_nll:.2f}"
+            f"Training Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} Avg "
+            f"loss: {avg_nll:.2f} "
         )
         writer.add_scalar("training/avg_loss", avg_nll, engine.state.epoch)
         writer.add_scalar("training/avg_accuracy", avg_accuracy, engine.state.epoch)
@@ -150,10 +166,13 @@ def trainer(model, dataset, args):
             global_step=engine.state.epoch,
         )
 
-    # _____________________________________ Prediction on test dataloader __________________________________________
+    # _____________________________________ Prediction on test dataloader _________________________
     # Compute and tensorboard_logs validation metrics
     @supervised_trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
+        """
+        Log validation results.
+        """
         evaluator.run(test_loader)
         _metrics = evaluator.state.metrics
         avg_accuracy = _metrics["accuracy"]
@@ -164,7 +183,8 @@ def trainer(model, dataset, args):
         if early_stopping:
             evaluator.add_event_handler(Events.COMPLETED, es_handler)
         tqdm.write(
-            f"Test Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} Avg loss: {avg_nll:.2f}"
+            f"Test Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} "
+            f"Avg loss: {avg_nll:.2f} "
         )
         pbar.n = pbar.last_print_n = 0
         writer.add_scalar("validation/avg_loss", avg_nll, engine.state.epoch)
@@ -174,24 +194,7 @@ def trainer(model, dataset, args):
             plot_cm(class_names, cm),
             global_step=engine.state.epoch,
         )
-
-    # _____________________________________ Save results __________________________________________
-    def save_results():
-        evaluator.run(test_loader)
-        _metrics = evaluator.state.metrics
-        avg_accuracy = _metrics["accuracy"]
-        cm = _metrics['cm']
-        cm = cm.numpy()
-        cm = cm.astype(int)
-        _ = plot_cm(class_names, cm, save=True)
-
-        json_file = os.path.join(ROOT_DIR, "reports", 'metrics', 'metrics.json')
-        with open(json_file, 'w') as outfile:
-            json.dump({"accuracy": avg_accuracy}, outfile)
-        return
-
-    save_results()
-    # _____________________________________ Fin Prediction on test dataloader ________________________________________
+    # _____________________________________ Fin Prediction on test dataloader _____________________
 
     # Setup object to checkpoint
     objects_to_checkpoint = {
@@ -215,9 +218,12 @@ def trainer(model, dataset, args):
     # - 4 iterations after checkpointing
     # This helps to compare resumed training with checkpoint training
     def log_event_filter(_e, event):
+        """
+        Filter events to log.
+        """
         if event in [1, 2, 3]:
             return True
-        elif 0 <= (event % (checkpoint_every * _e.state.epoch_length)) < 5:
+        if 0 <= (event % (checkpoint_every * _e.state.epoch_length)) < 5:
             return True
         return False
 
@@ -240,7 +246,7 @@ def trainer(model, dataset, args):
         manual_seed(SEED)
         supervised_trainer.run(train_loader, max_epochs=epochs)
     except Exception as _e:
-        import traceback
+        tqdm.write(f"Exception: {_e}")
 
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         logger.info(template.format(type(_e).__name__, _e.args))
@@ -248,6 +254,9 @@ def trainer(model, dataset, args):
 
     @supervised_trainer.on(Events.EPOCH_COMPLETED | Events.COMPLETED)
     def log_time():
+        """
+        Log time.
+        """
         tqdm.write(
             f"{supervised_trainer.last_event_name.name} took "
             f"{supervised_trainer.state.times[supervised_trainer.last_event_name.name]} seconds "
@@ -255,5 +264,3 @@ def trainer(model, dataset, args):
 
     pbar.close()
     writer.close()
-
-    return

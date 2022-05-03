@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 #
 # MLOps_MNIST_Pytorch documentation build configuration file, created by
 # sphinx-quickstart.
@@ -11,8 +12,7 @@
 # All configuration values have a default; values that are commented outputs
 # serve to show the default.
 
-import os
-import sys
+"""System module."""
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -231,7 +231,11 @@ man_pages = [
 texinfo_documents = [
     ('index', 'MLOps_MNIST_Pytorch', u'MLOps_MNIST_Pytorch Documentation',
      u"Julien Dejasmin", 'MLOps_MNIST_Pytorch',
-     'This project is a piece of a possible MLOps workflow that allows data scientist, researchers, students or independent developer to develop Machine Leanring project in Continuous Integration (CI) with most popular open-source or free tools.', 'Miscellaneous'),
+     'This project is a piece of a possible MLOps workflow that allows data scientist,'
+     ' researchers, students or '
+     'independent developer to develop Machine Leanring project in Continuous Integration '
+     '(CI) with most popular '
+     'open-source or free tools.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
