@@ -55,12 +55,12 @@ run_gpu: requirements
 	$(PYTHON_INTERPRETER) src/trainer/run.py --gpu
 
 ## run model training with GPU and Tensorboard
-run_gpu_tensorboard: requirements
-	$(PYTHON_INTERPRETER) src/trainer/run.py --gpu --tensorboard
+run_tensorboard: requirements
+	$(PYTHON_INTERPRETER) src/trainer/run.py --tensorboard_logs True
 
 ## run model training with Neptune.ai
 run_neptune: requirements
-	$(PYTHON_INTERPRETER) src/trainer/run.py --neptune
+	$(PYTHON_INTERPRETER) src/trainer/run.py --neptune_logs True
 
 ## Upload Data to S3
 sync_data_to_s3:

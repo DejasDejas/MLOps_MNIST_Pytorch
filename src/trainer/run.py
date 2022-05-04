@@ -90,6 +90,26 @@ if __name__ == "__main__":
         type=str2bool,
         help="True if you want to use early stopping.",
     )
+    parser.add_argument(
+        "--tensorboard_logs",
+        default=False,
+        type=str2bool,
+        help="True if you want to use tensorboard_logs.",
+    )
+    parser.add_argument(
+        "--neptune_logs",
+        default=True,
+        type=str2bool,
+        help="True if you want to use early neptune logs.",
+    )
+    parser.add_argument(
+        "--neptune_api_token",
+        type=str,
+        default="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9h"
+                "cHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJiNTYwZjdjZS05M2FkLTQ1M2MtOTgxZi0xOWNhZjU2MmRl"
+                "YWYifQ==",
+        help="Neptune API token.",
+    )
 
     arguments = parser.parse_args()
     run(arguments)
