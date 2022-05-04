@@ -1,5 +1,5 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module, unused-variable]
-# pylint: disable=broad-except, too-many-statements, too-many-local
+# pylint: disable=broad-except, too-many-statements, too-many-locals
 """System module."""
 from pathlib import Path
 import datetime
