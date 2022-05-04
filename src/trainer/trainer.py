@@ -26,7 +26,10 @@ from ignite.engine import (Events,
 from ignite.metrics import Accuracy, Loss, ConfusionMatrix
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
 from ignite.utils import manual_seed
-from ignite.contrib.handlers.neptune_logger import *
+from ignite.contrib.handlers.neptune_logger import (NeptuneLogger,
+                                                    GradsScalarHandler,
+                                                    global_step_from_engine,
+                                                    WeightsScalarHandler)
 import numpy as np
 from tqdm import tqdm
 from src.trainer.utils import (
