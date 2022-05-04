@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, redundant-u-string-prefix
 #
 # MLOps_MNIST_Pytorch documentation build configuration file, created by
 # sphinx-quickstart.

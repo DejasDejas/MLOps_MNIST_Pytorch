@@ -1,4 +1,4 @@
-# pylint: disable=[invalid-name, disable=import-error, no-name-in-module]
+# pylint: disable=[invalid-name, disable=import-error, no-name-in-module, no-member, not-callable]
 """System module."""
 import unittest
 import torch
@@ -15,7 +15,7 @@ class TestCNN(unittest.TestCase):
         Set up the test.
         """
         self.net = CNN()
-        self.inputs = torch.randn(4, 1, 28, 28)
+        self.inputs = torch.rand(4, 1, 28, 28)
 
     def test_shape(self):
         """

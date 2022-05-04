@@ -1,4 +1,5 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module, unused-variable]
+# pylint: disable=broad-except, too-many-statements, too-many-local
 """System module."""
 from pathlib import Path
 import datetime
@@ -34,7 +35,8 @@ from src.trainer.utils import (
     log_model_grads,
     plot_classes_preds,
     gpu_config,
-    print_num_params
+    print_num_params,
+    plot_cm
 )
 from config.log import setup_custom_logger
 from config.config import ROOT_DIR

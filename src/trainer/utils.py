@@ -1,14 +1,17 @@
 # pylint: disable=invalid-name, disable=import-error, no-name-in-module, unused-argument
-# pylint: disable=logging-fstring-interpolation, no-member
+# pylint: disable=logging-fstring-interpolation, no-member, unspecified-encoding
+# pylint: disable=consider-using-f-string
 """System module."""
 import argparse
-
+import os
+import seaborn as sns
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
 
 from config.log import setup_custom_logger
+from config.config import ROOT_DIR
 
 logger = setup_custom_logger(__name__)
 
@@ -143,6 +146,24 @@ def plot_classes_preds(net, images, labels, classes, n_img=16):
             classes[preds[idx]],
             probs[idx] * 100.0,
             classes[labels[idx]]), color=("green" if preds[idx] == labels[idx].item() else "red"))
+    return fig
+
+
+def plot_cm(classes, cm, save=False):
+    """
+    Generates confusion matrix matplotlib Figure using a trained network, along with images.
+    """
+    fig = plt.figure(figsize=(15, 15))
+    ax = fig.add_subplot()
+    sns.heatmap(cm, annot=True, ax=ax, fmt="d")
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(classes, rotation=90)
+    ax.yaxis.set_ticklabels(classes, rotation=0)
+    if save:
+        output_dir = os.path.join(ROOT_DIR, "reports", "figures")
+        plt.savefig(os.path.join(output_dir, 'cm.png'))
     return fig
 
 
