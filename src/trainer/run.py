@@ -34,7 +34,7 @@ if __name__ == "__main__":
         help="input batch size for validation (default: 1000)",
     )
     parser.add_argument(
-        "--epochs", type=int, default=10, help="number of epochs to train (default: 10)"
+        "--epochs", type=int, default=2, help="number of epochs to train (default: 10)"
     )
     parser.add_argument(
         "--lr", type=float, default=0.01, help="learning rate (default: 0.01)"
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_interval",
         type=int,
-        default=2,
+        default=100,
         help="how many batches to wait before logging training status",
     )
     parser.add_argument(
@@ -92,13 +92,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tensorboard_logs",
-        default=False,
+        default=True,
         type=str2bool,
         help="True if you want to use tensorboard_logs.",
     )
     parser.add_argument(
         "--neptune_logs",
-        default=True,
+        default=False,
         type=str2bool,
         help="True if you want to use early neptune logs.",
     )

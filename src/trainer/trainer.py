@@ -4,6 +4,8 @@
 import datetime
 import os
 import traceback
+import sys
+
 try:
     from tensorboardX import SummaryWriter
 except ImportError:
@@ -25,15 +27,25 @@ from ignite.engine import (Events,
                            create_supervised_evaluator)
 from ignite.metrics import Accuracy, Loss, ConfusionMatrix
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping
-from ignite.utils import manual_seed
-from ignite.contrib.handlers.neptune_logger import (NeptuneLogger,
-                                                    GradsScalarHandler,
-                                                    global_step_from_engine,
-                                                    WeightsScalarHandler)
+from ignite.utils import manual_seed, setup_logger
+from ignite.contrib.handlers.neptune_logger import (
+    global_step_from_engine as global_step_from_engine_neptune,
+    GradsScalarHandler as GradsScalarHandler_neptune,
+    NeptuneLogger,
+    WeightsScalarHandler as WeightsScalarHandler_neptune,
+    OptimizerParamsHandler as OptimizerParamsHandler_neptune,
+)
+from ignite.contrib.handlers.tensorboard_logger import (
+    global_step_from_engine as global_step_from_engine_tensorboard,
+    GradsScalarHandler as GradsScalarHandler_tensorboard,
+    TensorboardLogger,
+    WeightsScalarHandler as WeightsScalarHandler_tensorboard,
+    OptimizerParamsHandler as OptimizerParamsHandler_tensorboard,
+)
+
 import numpy as np
 from tqdm import tqdm
 from src.trainer.utils import (
-    plot_classes_preds,
     gpu_config,
     print_num_params,
     plot_cm
@@ -48,10 +60,85 @@ SEED = 42
 
 def score_function(engine):
     """
-    Score function for the evaluator.
+    Score function for ignite.
     """
     val_loss = engine.state.metrics["nll"]
     return -val_loss
+
+
+def logger_config(s_trainer, args, optimizer, model, log_interval, train_evaluator,
+                  validation_evaluator, log_dir):
+    """
+    Configure neptune logger.
+    """
+    assert not (args.tensorboard_logs and args.neptune_logs),\
+        "Please specify either tensorboard or neptune logs, not both."
+    if args.tensorboard_logs:
+        config_logger = TensorboardLogger(log_dir=log_dir)
+        GradsScalarHandler = GradsScalarHandler_tensorboard
+        WeightsScalarHandler = WeightsScalarHandler_tensorboard
+        OptimizerParamsHandler = OptimizerParamsHandler_tensorboard
+        global_step_from_engine = global_step_from_engine_tensorboard
+        logger.info("Using TensorboardLogger")
+    elif args.neptune_logs:
+        config_logger = NeptuneLogger(
+            api_token=args.neptune_api_token,
+            project_name="dejas/CNN-MNIST-MLOps-test",
+            experiment_name="cnn-mnist",
+            tags=["pytorch-ignite", "mnist", "MLOps", "CNN"],
+            upload_source_files=["**/*.ipynb", "**/*.yaml"],
+            params={'batch_size_train': args.batch_size,
+                    'batch_size_test': 1000,
+                    'log_interval': args.log_interval,
+                    'optimizer': optimizer,
+                    'epochs': args.epochs,
+                    'lr': args.lr,
+                    'resume_from': args.resume_from,
+                    'crash_iteration': args.crash_iteration,
+                    'tensorboard_logs': args.tensorboard_logs}
+        )
+        GradsScalarHandler = GradsScalarHandler_neptune
+        WeightsScalarHandler = WeightsScalarHandler_neptune
+        OptimizerParamsHandler = OptimizerParamsHandler_neptune
+        global_step_from_engine = global_step_from_engine_neptune
+        logger.info("Using NeptuneLogger")
+    else:
+        raise ValueError("Please specify either --tb_log or --neptune_log")
+
+    # Attach the logger to the trainer to log model's weights norm after each iteration
+    config_logger.attach(
+        s_trainer,
+        event_name=Events.ITERATION_COMPLETED(every=log_interval),
+        log_handler=GradsScalarHandler(model,
+                                       tag="model_trainer",
+                                       reduction=torch.norm)
+    )
+    # Attach the logger to the trainer to log model's weights norm after each iteration
+    config_logger.attach(
+        s_trainer,
+        event_name=Events.ITERATION_COMPLETED(every=log_interval),
+        log_handler=WeightsScalarHandler(model,
+                                         tag="model_trainer",
+                                         reduction=torch.norm)
+    )
+    # Attach the logger to the trainer to log optimizer's parameters,
+    # e.g. learning rate at each iteration
+    config_logger.attach(
+        s_trainer,
+        event_name=Events.ITERATION_STARTED,
+        log_handler=OptimizerParamsHandler(optimizer,
+                                           tag="model_trainer")
+    )
+    for tag, evaluator in [("metrics/training", train_evaluator),
+                           ("metrics/validation", validation_evaluator)]:
+        config_logger.attach_output_handler(
+            evaluator,
+            event_name=Events.EPOCH_COMPLETED,
+            tag=tag,
+            metric_names=["nll", "accuracy"],
+            global_step_transform=global_step_from_engine(s_trainer),
+        )
+    return config_logger
 
 
 def trainer(model, train_loader, test_loader, args):
@@ -70,29 +157,10 @@ def trainer(model, train_loader, test_loader, args):
     tb_graph_model = args.tb_graph_model
     early_stopping = args.early_stopping
     tb_logs = args.tensorboard_logs
-    nt_logs = args.neptune_logs
+    npt_logs = args.neptune_logs
 
     # data:
     class_names = np.arange(10)
-
-    # training log init:
-    log_dir = os.path.join(ROOT_DIR, log_dir)
-    model_dir = os.path.join(ROOT_DIR, model_dir)
-    if tb_logs:
-        writer = SummaryWriter(log_dir=log_dir)
-    if nt_logs:
-        npt_logger = NeptuneLogger(
-            api_token=args.neptune_api_token,
-            project_name="dejas/CNN-MNIST-MLOps-test",
-            experiment_name="cnn-mnist",
-            params={"max_epochs": 10},
-            tags=["pytorch-ignite", "mnist", "MLOps", "CNN"]
-        )
-    pbar = tqdm(initial=0,
-                leave=False,
-                total=len(train_loader),
-                desc=f"Epoch 0 - loss: {0:.4f} - lr: {lr:.4f}",
-                )
 
     # model and training parameters config:
     model, device = gpu_config(model)
@@ -105,164 +173,80 @@ def trainer(model, train_loader, test_loader, args):
         "nll": Loss(criterion),
         "cm": ConfusionMatrix(len(class_names))
     }
+    log_dir = os.path.join(ROOT_DIR, log_dir)
+    model_dir = os.path.join(ROOT_DIR, model_dir)
+    write_logger = None  # init writers variables to None
+    # __________________________parameters end__________________________
 
-    if tb_logs:
-        # inspect the model using TensorBoard:
-        if tb_graph_model:
-            images, labels = next(train_loader.__iter__())
-            writer.add_graph(model, images)
+    # training log init:
+    pbar = tqdm(initial=0,
+                leave=False,
+                total=len(train_loader),
+                desc=f"Epoch 0 - loss: {0:.4f} - lr: {lr:.4f}")
 
     # Setup trainer and evaluator
-    supervised_trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
-    evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
+    s_trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
+    s_trainer.logger = setup_logger("Trainer", stream=sys.stdout)
+    train_evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
+    train_evaluator.logger = setup_logger("Train Evaluator", stream=sys.stdout)
+    validation_evaluator = create_supervised_evaluator(model, metrics=metrics, device=device)
+    validation_evaluator.logger = setup_logger("Val Evaluator", stream=sys.stdout)
+
+    if npt_logs | tb_logs:
+        # Neptune logger init:
+        write_logger = logger_config(s_trainer, args, optimizer, model, log_interval,
+                                     train_evaluator, validation_evaluator, log_dir)
 
     if early_stopping:
         # early stopping
         es_handler = EarlyStopping(
-            patience=10, score_function=score_function, trainer=supervised_trainer
+            patience=10, score_function=score_function, trainer=s_trainer
         )
-
-    # Apply learning rate scheduling
-    @supervised_trainer.on(Events.EPOCH_COMPLETED)
-    def lr_step():
-        """
-        Learning rate scheduler.
-        """
-        lr_scheduler.step()
-
-    if nt_logs:
-        # Attach the logger to the trainer to log model's weights norm after each iteration
-        npt_logger.attach(
-            supervised_trainer,
-            event_name=Events.ITERATION_COMPLETED(every=log_interval),
-            log_handler=GradsScalarHandler(model, reduction=torch.norm)
-        )
-
-        # Attach the logger to the trainer to log training loss at each iteration
-        npt_logger.attach_output_handler(
-            supervised_trainer,
-            event_name=Events.ITERATION_COMPLETED(every=log_interval),
-            tag="training",
-            output_transform=lambda loss: {'loss': loss}
-        )
-
-        # Attach the logger to the evaluator on the training dataset and log NLL, Accuracy
-        # metrics after each epoch We setup `global_step_transform=global_step_from_engine(
-        # trainer)` to take the epoch of the `trainer` instead of `train_evaluator`.
-        npt_logger.attach_output_handler(
-            supervised_trainer,
-            event_name=Events.EPOCH_COMPLETED,
-            tag="training",
-            metric_names=["nll", "accuracy"],
-            global_step_transform=global_step_from_engine(supervised_trainer),
-        )
-
-        # Attach the logger to the evaluator on the validation dataset and log NLL, Accuracy
-        # metrics after each epoch. We set up `global_step_transform=global_step_from_engine(
-        # trainer)` to take the epoch of the `trainer` instead of `evaluator`.
-        npt_logger.attach_output_handler(
-            evaluator,
-            event_name=Events.EPOCH_COMPLETED,
-            tag="validation",
-            metric_names=["nll", "accuracy"],
-            global_step_transform=global_step_from_engine(evaluator),
-        )
-
-        # Attach the logger to the trainer to log optimizer's parameters, e.g. learning rate at
-        # each iteration
-        npt_logger.attach_opt_params_handler(
-            supervised_trainer,
-            event_name=Events.ITERATION_STARTED,
-            optimizer=optimizer,
-            param_name='lr'
-        )
-
-        # Attach the logger to the trainer to log model's weights norm after each iteration
-        npt_logger.attach(
-            supervised_trainer,
-            event_name=Events.ITERATION_COMPLETED,
-            log_handler=WeightsScalarHandler(model)
-        )
-
-    @supervised_trainer.on(Events.ITERATION_COMPLETED(every=log_interval))
-    def log_training_loss(engine):
-        """
-        Log training loss.
-        """
-        _lr = optimizer.param_groups[0]["lr"]
-        pbar.desc = f"Epoch {engine.state.epoch} - loss: {engine.state.output:.4f} - lr: {_lr:.4f}"
-        pbar.update(log_interval)
-        if tb_logs:
-            writer.add_scalar("training/loss", engine.state.output, engine.state.iteration)
-            writer.add_scalar("lr", _lr, engine.state.iteration)
+        train_evaluator.add_event_handler(Events.COMPLETED, es_handler)
 
     if crash_iteration > 0:
-        @supervised_trainer.on(Events.ITERATION_COMPLETED(once=crash_iteration))
+        @s_trainer.on(Events.ITERATION_COMPLETED(once=crash_iteration))
         def _(engine):  # sourcery skip: raise-specific-error
             raise Exception(f"STOP at {engine.state.iteration}")
 
     if resume_from is not None:
-        @supervised_trainer.on(Events.STARTED)
+        @s_trainer.on(Events.STARTED)
         def _(engine):
             pbar.n = engine.state.iteration % engine.state.epoch_length
 
-    @supervised_trainer.on(Events.EPOCH_COMPLETED)
-    def log_training_results(engine):
+    @s_trainer.on(Events.EPOCH_COMPLETED)
+    def compute_metrics(engine):
         """
-        Log training results.
+        Compute metrics.
         """
         pbar.refresh()
-        evaluator.run(train_loader)
-        _metrics = evaluator.state.metrics
+        lr_scheduler.step()  # update learning rate
+        train_evaluator.run(train_loader)
+        _metrics = train_evaluator.state.metrics
         avg_accuracy = _metrics["accuracy"]
         avg_nll = _metrics["nll"]
         tqdm.write(
             f"Training Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} Avg "
             f"loss: {avg_nll:.2f} "
         )
-        if tb_logs:
-            writer.add_scalar("training/avg_loss", avg_nll, engine.state.epoch)
-            writer.add_scalar("training/avg_accuracy", avg_accuracy, engine.state.epoch)
-            writer.add_figure(
-                "predictions vs. actual",
-                plot_classes_preds(model, images, labels, class_names),
-                global_step=engine.state.epoch,
-            )
-
-    # _____________________________________ Prediction on test dataloader _________________________
-    # Compute and tensorboard_logs validation metrics
-    @supervised_trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(engine):
-        """
-        Log validation results.
-        """
-        evaluator.run(test_loader)
-        _metrics = evaluator.state.metrics
+        validation_evaluator.run(test_loader)
+        _metrics = validation_evaluator.state.metrics
         avg_accuracy = _metrics["accuracy"]
         avg_nll = _metrics["nll"]
         cm = _metrics['cm']
         cm = cm.numpy()
         cm = cm.astype(int)
-        if early_stopping:
-            evaluator.add_event_handler(Events.COMPLETED, es_handler)
+        cm_fig = plot_cm(class_names, cm)
+        cm_fig.savefig(os.path.join(ROOT_DIR, f"reports/figures/cm_epoch_{engine.state.epoch}.png"))
         tqdm.write(
-            f"Test Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} "
-            f"Avg loss: {avg_nll:.2f} "
+            f"Testing Results - Epoch: {engine.state.epoch} Avg accuracy: {avg_accuracy:.2f} Avg "
+            f"loss: {avg_nll:.2f} "
         )
         pbar.n = pbar.last_print_n = 0
-        if tb_logs:
-            writer.add_scalar("validation/avg_loss", avg_nll, engine.state.epoch)
-            writer.add_scalar("validation/avg_accuracy", avg_accuracy, engine.state.epoch)
-            writer.add_figure(
-                "Confusion Matrix on test set",
-                plot_cm(class_names, cm),
-                global_step=engine.state.epoch,
-            )
-    # _____________________________________ Fin Prediction on test dataloader _____________________
 
     # Setup object to checkpoint
     objects_to_checkpoint = {
-        "trainer": supervised_trainer,
+        "trainer": s_trainer,
         "model": model,
         "optimizer": optimizer,
         "lr_scheduler": lr_scheduler,
@@ -271,11 +255,9 @@ def trainer(model, train_loader, test_loader, args):
         to_save=objects_to_checkpoint,
         save_handler=DiskSaver(model_dir, require_empty=False),
         n_saved=None,
-        global_step_transform=lambda *_: supervised_trainer.state.epoch,
+        global_step_transform=lambda *_: s_trainer.state.epoch,
     )
-    supervised_trainer.add_event_handler(
-        Events.EPOCH_COMPLETED(every=checkpoint_every), training_checkpoint
-    )
+    s_trainer.add_event_handler(Events.EPOCH_COMPLETED(every=checkpoint_every), training_checkpoint)
 
     if resume_from is not None:
         tqdm.write(f"Resume from the checkpoint: {resume_from}")
@@ -284,26 +266,13 @@ def trainer(model, train_loader, test_loader, args):
     try:
         # Synchronize random states
         manual_seed(SEED)
-        supervised_trainer.run(train_loader, max_epochs=epochs)
+        s_trainer.run(train_loader, max_epochs=epochs)
     except Exception as _e:
         tqdm.write(f"Exception: {_e}")
-
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         logger.info(template.format(type(_e).__name__, _e.args))
         logger.info(traceback.format_exc(), _e)
 
-    @supervised_trainer.on(Events.EPOCH_COMPLETED | Events.COMPLETED)
-    def log_time():
-        """
-        Log time.
-        """
-        tqdm.write(
-            f"{supervised_trainer.last_event_name.name} took "
-            f"{supervised_trainer.state.times[supervised_trainer.last_event_name.name]} seconds "
-        )
-
     pbar.close()
-    if tb_logs:
-        writer.close()
-    if nt_logs:
-        npt_logger.close()
+    if tb_logs | npt_logs:
+        write_logger.close()

@@ -17,9 +17,10 @@ jobs:
       - name: run model training neptune
         env:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          neptune_token: ${{ secrets.NEPTUNE_TOKEN }}
+          neptune_token: ${{ secrets.NEPTUNE_API_TOKEN }}
         run: |
           pip install -r requirements.txt
           pip install neptune-client
           
-          python src/trainer/run.py --neptune_logs True --neptune_api_token ${{ secrets.NEPTUNE_TOKEN }}
+          python src/trainer/run.py --neptune_logs True --neptune_api_token \
+          ${{ secrets.NEPTUNE_API_TOKEN }}

@@ -25,6 +25,7 @@ We use [CML (Continuous Machine Learning)](https://cml.dev/) as CI/CD machine le
 
 ### Technologies
 - Python (Pytorch Ignite)
+- neptune logger and tensorboard logger
 - MLOps
 - CI/CD
 
