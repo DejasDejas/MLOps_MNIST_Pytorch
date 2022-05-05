@@ -7,7 +7,7 @@ setup(
     version='0.1.0',
     description='This project is a piece of a possible MLOps workflow that allows data scientist, '
                 'researchers, '
-                'students or independent developer to develop Machine Leanring project in '
+                'students or independent developer to develop Machine Leaning project in '
                 'Continuous Integration (CI) '
                 'with most popular open-source or free tools.',
     author='Julien Dejasmin',

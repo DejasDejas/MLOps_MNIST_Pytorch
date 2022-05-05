@@ -1,24 +1,11 @@
 # pylint: disable=[invalid-name, disable=import-error, no-name-in-module, unused-variable]
-# pylint: disable=broad-except, too-many-statements, too-many-locals
+# pylint: disable=broad-except, too-many-statements, too-many-locals, too-many-arguments
 """System module."""
 import datetime
 import os
 import traceback
 import sys
 
-try:
-    from tensorboardX import SummaryWriter
-except ImportError:
-    try:
-        from torch.utils.tensorboard import SummaryWriter
-    except ImportError as e:
-        raise RuntimeError(
-            "This module requires either tensorboardX or torch >= 1.2.0. "
-            "You may install tensorboardX with command: \n pip install "
-            "tensorboardX \n"
-            "or upgrade PyTorch using your package manager of choice "
-            "(pip or conda)."
-        ) from e
 import torch
 from torch import nn, optim
 from torch.optim.lr_scheduler import StepLR

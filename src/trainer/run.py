@@ -92,7 +92,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--tensorboard_logs",
-        default=True,
+        default=False,
         type=str2bool,
         help="True if you want to use tensorboard_logs.",
     )
