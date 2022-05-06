@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name, disable=import-error, no-name-in-module
 # pylint: disable=logging-fstring-interpolation
-"""System module."""
+"""Module for creating the dataset."""
 import os
 
 import torch

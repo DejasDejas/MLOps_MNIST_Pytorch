@@ -13,21 +13,21 @@ Note: the main goal of this project is not to perform the classification task bu
 
 ### Method used
 
-In this repository, we develop a CNN model in [Pytorch Ignite](https://pytorch.org/ignite/index.html) to classify [MNIST dataset](http://yann.lecun.com/exdb/mnist/.
+In this repository, we develop a CNN model in [Pytorch Ignite](https://pytorch.org/ignite/index.html) to classify [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
 
 We ensure the training monitoring with [TensorBoard](https://www.tensorflow.org/tensorboard) and/or [Neptune.ai](https://neptune.ai/).
 
-We use [DVC (Data Version Control)](https://dvc.org/) to data  versioning and DVC Gdrive remote for data storage.
-We use [CML (Continuous Machine Learning)](https://cml.dev/) as CI/CD machine learning. 
+We use GitHub Actions to run the training and testing.
 
-**TODO:** motivate my chosen method
+We can use [DVC (Data Version Control)](https://dvc.org/) to data  versioning and DVC Gdrive remote for data storage.
+We can use [CML (Continuous Machine Learning)](https://cml.dev/) as CI/CD machine learning.
 
 
 ### Technologies
 - Python (Pytorch Ignite)
-- neptune logger and tensorboard logger
-- MLOps
-- CI/CD
+- neptune and tensorboard loggers
+- MLOps workflow
+- CI machine learning
 
 ## Project description /  Motivation
 
@@ -35,59 +35,91 @@ In the field of data science, developing a project requires a lot of organizatio
 For each step of the development of a machine learning project there are many tools, and it is difficult to know which one to choose.
 
 That's why I propose in this repo a selection of tools that are quite easy to use, open source, free and among the most used in data science.
-Note that this is only a proposal of possible workflows and that there are many others.
+Note this is only a proposal of possible workflows and there are many others.
 
 The classic steps in a data science project are the following:
-- Problem statement
-- Define timeline, deadline and team for the project
-- Create GitHub repository
-- Data:
-    - Define data needed
-    - data extraction
-    - data pre-processing
-    - Exploratory Data Analysis (EDA)
-    - prepare data (Building train and test datasets)
-    - save data and init data versioning with DVC remote on GDrive.
-- Model
-    - define model pytorch ignite + tensorboard + neptune
-    - Unitaire test (adapt for machine learning)
-    - Training model for the first time (baseline)
-    - Evaluate model
+1. Problem statement:
+2. Project initialization:
+3. Data preparation:
+4. Model development:
+5. Documentation:
+
+
+### 1) Problem statement:
+
+It is a very important step: to understand the problem and the data. 
+  - What is your current process ? 
+  - What do you want to predict ?
+  - How do you get the data ?
+
+### 2) Project initialization:
+
+Define timeline, deadline and team for the project: 
+- How long will it take ?
+- Who will be the team ?
+- When will you start ?
+Jira is a good tool to manage this.
+
+Create GitHub repository:
+- Create a repository on GitHub initialized with cookiecutter.
+GitLab is a good other option.
+
+### 3) Data preparation:
+
+- Understand and find the data:
+  - Define data needed
+  - What are your data source ?
+
+- Prepare data:
+  - Data extraction
+  - Data pre-processing
+  - Exploratory Data Analysis (EDA)
+  - prepare data (Building train and test datasets)
+
+- Storage and version data:
+  - A good solution to versioning and storage data for free is [DVC](https://dvc.org/). For example, you can use [DVC Gdrive remote](https://dvc.org/docs/remote/gdrive/).
+
+### 4) Model development:
+
+An example of good environment in Linux to develop a model in python is:
+- IDE: [Pycharm](https://www.jetbrains.com/pycharm/)
+- Machine learning library: [Pytorch](https://pytorch.org/) + [Ignite](https://pytorch.org/ignite/)
+- Monitoring: [TensorBoard](https://www.tensorflow.org/tensorboard/) and./or [Neptune.ai](https://neptune.ai/).
+- Testing: pytest, pylint, flake8, black
+- Notebook: [Jupyter](https://jupyter.org/) or [Datalor](https://datalore.jetbrains.com/) or google colab.
+- Continuous integration (CI): [GitHub Actions]
+- Cloud computing: [GCP](https://cloud.google.com/), [Azure](https://azure.microsoft.com/en-us/services/compute/), [AWS](https://aws.amazon.com/), [Google Colab](https://colab.research.google.com/).
+
+An example of CI machine learning is:
 - CI loop:
-    - init CI with CML + DVC + GitHub action (only for the first loop) [link](https://dvc.org/doc/user-guide/setup-google-drive-remote)
-    - Make change and runs experiments. Ensure changed code doesn't break functionalities by running sanity checks (local).
-    - optimize model (autoPyTorch)
-    - Dev create pull request targeting the main branch
-    - CI tests
-    - CI server rerun the code. Submit the new code to the CI routine (CML + GitHub action) which will re-run the tests again on a neutral environment to ensure reproducibility.
-    - CI server compare performance metrics with the main branch and reports back to the PR page on GitHub so other members can review it.
-    - If  approved, the code is then merged to main.
-    - CI server reruns the experiment again but this time the model is pushed to the remote storage for future deployment as well as a performance report for comparison.
-    - Optim CI
-- Deploy trained model (Model serving)
-- Model monitoring
-- Documentation
-- Create a pip install for my application
-- Maintain system:
-  - tests:
-    - speed
-    - performance
-    - etc...
+  - init CI with CML + DVC + GitHub action
+  - Make change and runs experiments. Ensure changed code doesn't break functionalities by running sanity checks (local).
+  - optimize model (autoPyTorch for example)
+  - Developer creates pull request targeting the main branch
+  - CI tests
+  - CI server rerun the code. Submit the new code to the CI routine (CML + GitHub action) which will re-run the tests again on a neutral environment to ensure reproducibility.
+  - CI server compare performance metrics with the main branch and reports back to the PR page on GitHub so other members can review it.
+  - If  approved, the code is then merged to main.
+  - CI server reruns the experiment again but this time the model is pushed to the remote storage for future deployment as well as a performance report for comparison.
+  - If CI routine is too long, you can optimize it.
+
+### 5) Documentation:
+
+For a great and auto generated documentation, you can use [Sphinx](https://www.sphinx-doc.org/en/master/).
 
 
 ## Getting Started
 
 In this repo you can find help to:
 - create a CNN with Pytorch Ignite,
-- sanity tests for machine learning,
-- monitor training and validation results with TensorBoard or Neptune,
+- define some sanity checks for machine learning,
+- monitor training and validation results with TensorBoard and/or Neptune,
 - initialise a data science project with a good architecture (cookiecutter),
 - save and store data on GDrive with DVC,
 - versioning data and model with DVC,
-- create a CI/CD loop with CML
+- create a Continuous Integration loop with GitHub Actions and CML.
 
-**TODO:** add other readme.md with details for some folder (tests, cml.yaml, .dvc, etc....)
 
 ## More resources
 
-Arrive soon...
+Nothing to add here....
